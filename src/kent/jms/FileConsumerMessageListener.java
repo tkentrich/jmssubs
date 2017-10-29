@@ -3,6 +3,7 @@ package kent.jms;
 import java.util.Enumeration;
 
 import java.io.IOException;
+import java.io.File;
 import java.io.FileOutputStream;
 
 import javax.jms.JMSException;
@@ -12,23 +13,38 @@ import javax.jms.BytesMessage;
 
 public class FileConsumerMessageListener implements MessageListener {
 	private String consumerName;
+	private File destination;
 	private int messageIndex;
 
-	public FileConsumerMessageListener(String consumerName) {
+	public FileConsumerMessageListener(String consumerName, File destinationDirectory) {
 		this.consumerName = consumerName;
+		this.destination = destinationDirectory;
 		this.messageIndex = 1;
+		if (!destinationDirectory.exists()) {
+			if (!destinationDirectory.mkdirs()) {
+				System.err.println("ERROR: Unable to create " + destinationDirectory);
+				System.exit(1);
+			}
+			System.out.println("Directory " + destinationDirectory + " created");
+		} else if (!destinationDirectory.isDirectory()) {
+			System.err.println("ERROR: " + destinationDirectory + " is not a directory");
+			System.exit(1);
+		}
 	}
+
 	public void onMessage(Message message) {
 		BytesMessage bytesMessage = (BytesMessage) message;
 		try {
 			System.out.println(consumerName + " received a file");
-			String filename = "/tmp/file" + consumerName + messageIndex++;
+			String filename = destination + File.pathSeparator;
 			System.out.println("Message properties:");
 			for (Enumeration e = bytesMessage.getPropertyNames(); e.hasMoreElements(); ) {
 				String prop = e.nextElement().toString();
 				System.out.println(prop + ":" + bytesMessage.getStringProperty(prop));
-				if (prop.equals("Name")) {
-					filename += "_" + bytesMessage.getStringProperty(prop);
+				if (prop.equals("FileName")) {
+					filename += bytesMessage.getStringProperty(prop);
+				} else {
+					filename += consumerName + "_" + messageIndex;
 				}
 			}
 			FileOutputStream outFile = new FileOutputStream(filename);

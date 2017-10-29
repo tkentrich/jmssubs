@@ -1,6 +1,9 @@
 package kent.jms;
 
+import java.io.File;
+
 import java.util.Arrays;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Session;
@@ -18,6 +21,7 @@ public class FileSubscriberClient {
 		boolean argsDone = false;
 		boolean verbose = false;
 		String[] topics = {};
+		String destination = "/tmp";
 
 		// Parse Arguments
 		for (int i = 0; i < args.length; i++) {
@@ -43,7 +47,7 @@ public class FileSubscriberClient {
 			Topic topic = session.createTopic(topicName);
 
 			MessageConsumer consumer = session.createConsumer(topic);
-			consumer.setMessageListener(new FileConsumerMessageListener(topicName));
+			consumer.setMessageListener(new FileConsumerMessageListener(topicName, new File(destination)));
 		}
 
 		connection.start();
