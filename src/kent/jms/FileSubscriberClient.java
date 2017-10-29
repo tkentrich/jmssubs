@@ -1,5 +1,6 @@
 package kent.jms;
 
+import java.util.Arrays;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Session;
@@ -13,23 +14,38 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 public class FileSubscriberClient {
 	public static void main(String[] args) throws JMSException {
 		Connection connection = null;
-		try {
-			ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
-			connection = connectionFactory.createConnection();
-			Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-			Topic topic = session.createTopic("fileTopic");
-	
-			MessageConsumer consumer = session.createConsumer(topic);
-			consumer.setMessageListener(new FileConsumerMessageListener("Consumer1"));
 
-			connection.start();
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
+		boolean argsDone = false;
+		boolean verbose = false;
+		String[] topics = {};
+
+		// Parse Arguments
+		for (int i = 0; i < args.length; i++) {
+			if (args[i].equals("-v")) {
+				verbose = true;
+			} else {
+				argsDone = true;
 			}
-			// session.close();
-		} finally {
-			// connection.close();
+			if (argsDone) {
+				topics = Arrays.copyOfRange(args, i, args.length);
+				break;
+			}
 		}
+
+		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+		connection = connectionFactory.createConnection();
+		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+		for (String topicName : topics) {
+			if (verbose) {
+				System.out.println("Subscribing to topic: " + topicName);
+			}
+			Topic topic = session.createTopic(topicName);
+
+			MessageConsumer consumer = session.createConsumer(topic);
+			consumer.setMessageListener(new FileConsumerMessageListener(topicName));
+		}
+
+		connection.start();
 	}
 }

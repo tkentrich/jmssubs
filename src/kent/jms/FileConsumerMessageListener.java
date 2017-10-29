@@ -24,8 +24,6 @@ public class FileConsumerMessageListener implements MessageListener {
 			System.out.println(consumerName + " received a file");
 			String filename = "/tmp/file" + consumerName + messageIndex++;
 			System.out.println("Message properties:");
-			//Enumeration<String> propNames = bytesMessage.getPropertyNames();
-			//for (String prop : propNames) {
 			for (Enumeration e = bytesMessage.getPropertyNames(); e.hasMoreElements(); ) {
 				String prop = e.nextElement().toString();
 				System.out.println(prop + ":" + bytesMessage.getStringProperty(prop));
@@ -33,13 +31,12 @@ public class FileConsumerMessageListener implements MessageListener {
 					filename += "_" + bytesMessage.getStringProperty(prop);
 				}
 			}
-			// File outFile = new File(filename, "w");
 			FileOutputStream outFile = new FileOutputStream(filename);
 
 			byte[] messageBytes = new byte[(int)bytesMessage.getBodyLength()];
 			bytesMessage.readBytes(messageBytes);
 			outFile.write(messageBytes);
-			System.out.println(filename + " written");
+			System.out.println(consumerName + ":" + filename + " written");
 			outFile.close();
 		} catch (JMSException e) {
 			e.printStackTrace();

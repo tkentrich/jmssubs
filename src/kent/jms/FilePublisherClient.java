@@ -5,6 +5,8 @@ import java.io.RandomAccessFile;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import java.util.Arrays;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Session;
@@ -23,23 +25,52 @@ public class FilePublisherClient {
 			ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
 			connection = connectionFactory.createConnection();
 			Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-			Topic topic = session.createTopic("fileTopic");
-	
+
+			String topicName = "fileTopic";
+			boolean argsDone = false;
+			boolean verbose = false;
+
+			String[] filenames = {};
+
+			for (int i = 0; i < args.length; i++) {
+				if (args[i].equals("-t")) {
+					i++;
+					if (i < args.length) {
+						topicName = args[i];
+					}
+				} else if (args[i].startsWith("--topic=")) {
+					topicName = args[i].substring(9);
+				} else if (args[i].equals("-v")) {
+					verbose = true;
+				} else {
+					argsDone = true;
+				}
+				if (argsDone) {
+					filenames = Arrays.copyOfRange(args, i, args.length);
+					break;
+				}
+			}
+
+			Topic topic = session.createTopic(topicName);
 			MessageProducer producer = session.createProducer(topic);
 
-			// String[] filenames = {"/tmp/File1", "/tmp/File2"};
-
-			for (String fn : args) {
+			for (String fn : filenames) {
 				try {
-					RandomAccessFile file = new RandomAccessFile(fn, "r");
-					BytesMessage msg = session.createBytesMessage();
-					byte[] b = new byte[(int)file.length()];
-					file.readFully(b);
+					File fileObj = new File(fn);
+					if (fileObj.exists() && fileObj.canRead()) {
+						RandomAccessFile file = new RandomAccessFile(fileObj, "r");
+						BytesMessage msg = session.createBytesMessage();
+						byte[] b = new byte[(int)file.length()];
+						file.readFully(b);
 
-					msg.writeBytes(b);
-					msg.setStringProperty("Name", fn);
-
-					producer.send(msg);
+						msg.writeBytes(b);
+						msg.setStringProperty("SourceFile", fn);
+						msg.setStringProperty("FileName", fileObj.getName());
+						if (verbose) {
+							System.out.println("Sending file: " + fn);
+						}
+						producer.send(msg);
+					}
 				} catch (IOException e) {
 				}
 
