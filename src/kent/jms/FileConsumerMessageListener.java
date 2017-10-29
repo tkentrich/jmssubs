@@ -36,16 +36,19 @@ public class FileConsumerMessageListener implements MessageListener {
 		BytesMessage bytesMessage = (BytesMessage) message;
 		try {
 			System.out.println(consumerName + " received a file");
-			String filename = destination + File.pathSeparator;
+			String filename = destination + File.separator;
+			boolean nameGiven = false;
 			System.out.println("Message properties:");
 			for (Enumeration e = bytesMessage.getPropertyNames(); e.hasMoreElements(); ) {
 				String prop = e.nextElement().toString();
 				System.out.println(prop + ":" + bytesMessage.getStringProperty(prop));
 				if (prop.equals("FileName")) {
 					filename += bytesMessage.getStringProperty(prop);
-				} else {
-					filename += consumerName + "_" + messageIndex;
+					nameGiven = true;
 				}
+			}
+			if (!nameGiven) {
+				filename += consumerName + "_" + messageIndex;
 			}
 			FileOutputStream outFile = new FileOutputStream(filename);
 

@@ -1,5 +1,7 @@
 package kent.jms;
 
+import java.io.File;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Session;
@@ -15,10 +17,12 @@ public class FileSubscriberDaemon implements Daemon {
 
 	Connection connection;
 	String topicName;
+	String destination;
 
 	@Override
 	public void init(DaemonContext dc) throws DaemonInitException, Exception {
 		topicName = "DefaultTopic";
+		destination = "/tmp";
 		for (String s : dc.getArguments()) {
 			topicName = s;
 		}
@@ -28,7 +32,7 @@ public class FileSubscriberDaemon implements Daemon {
 		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 		Topic topic = session.createTopic(topicName);
 		MessageConsumer consumer = session.createConsumer(topic);
-		consumer.setMessageListener(new FileConsumerMessageListener(topicName));
+		consumer.setMessageListener(new FileConsumerMessageListener(topicName, new File(destination)));
 	}
 
 	@Override
